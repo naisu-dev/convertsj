@@ -24,17 +24,20 @@ def Give_H(text):
     return output
 
 def ConvertSJ(minecraft_json):
+    test_pattern = re.compile(r'-*[0-9]+[bBslLfFdD]')
+    r_json = test_pattern.findall(minecraft_json)
+    for i in range(len(r_json)):
+        minecraft_json = (minecraft_json.replace(r_json[i], (r_json[i])[:-1]))
     minecraft_json = minecraft_json.replace("\"", "").replace("'", "")
     pattern = re.compile(r'\b([a-zA-Z_]{2,})\b')
     standard_json = pattern.sub(r'"\1"', minecraft_json)
     return standard_json
 
-MotoText = '/give @p minecraft:diamond_sword{Enchantments:[{id:protection,lvl:1},{id:fire_protection,lvl:1}]}'
+MotoText = '/give @p diamond_axe{"BlockEntityTag": {"Lock": "2b4b"}}'
 MotoText = MotoText.replace("minecraft:", "")
 
 OutputList = []
 KaisekiText = Give_H(MotoText)
-
 
 nbt_data = ast.literal_eval(ConvertSJ(KaisekiText["NBT"]))
 
@@ -69,6 +72,8 @@ if "Enchantments" in nbt_data:
     for i in range(len(nbt_data["Enchantments"])):
         enchant[nbt_data["Enchantments"][i]["id"]] = nbt_data["Enchantments"][i]["lvl"]
     OutputList.append("minecraft:enchantments={levels:{"+ str(enchant).replace("{", "").replace("}", "")+ "}}")
+if "BlockEntityTag" in nbt_data:
+    OutputList.append("minecraft:lock="+ str(nbt_data["BlockEntityTag"]["Lock"])+ "\"")
 
 if KaisekiText["slash"]:
     OutputCommand = "/give "+ KaisekiText["selector"]+ " "+ KaisekiText["item"]+ str(OutputList).replace("'", "").replace('"', "")
