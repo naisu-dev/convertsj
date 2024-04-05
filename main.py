@@ -1,5 +1,5 @@
-import ast
 import re
+import ast
 
 def Give_H(text):
     output = {}
@@ -23,23 +23,22 @@ def Give_H(text):
         return output
     return output
 
-def ConvertSJ(minecraft_json):
-    test_pattern = re.compile(r'-*[0-9]+[bBslLfFdD]')
-    r_json = test_pattern.findall(minecraft_json)
-    for i in range(len(r_json)):
-        minecraft_json = (minecraft_json.replace(r_json[i], (r_json[i])[:-1]))
-    minecraft_json = minecraft_json.replace("\"", "").replace("'", "")
-    pattern = re.compile(r'\b([a-zA-Z_]{2,})\b')
-    standard_json = pattern.sub(r'"\1"', minecraft_json)
-    return standard_json
+def ConvertSJ(text):
+    find = re.sub(r"[^{}\[\]\":,'\s]+", r'"\g<0>"', text).replace('""', '"').replace("'\"", "\"").replace("\"'", "\"")
+    return find
 
-MotoText = '/give @p diamond_axe{"BlockEntityTag": {"Lock": "2b4b"}}'
-MotoText = MotoText.replace("minecraft:", "")
+def nise_int(n_int):
+    if re.match(r"[0-9]+[bBslLfFdD]", n_int) is not None:
+        return int(n_int[:-1])
+    else:
+        return int(n_int)
+
+command = '/give @p minecraft:diamond_axe{Damage: 1b,BlockEntityTag:{"Lock": "あ"}}' ## ←←ここにコマンドを入力
+data = Give_H(command)
 
 OutputList = []
-KaisekiText = Give_H(MotoText)
 
-nbt_data = ast.literal_eval(ConvertSJ(KaisekiText["NBT"]))
+nbt_data = ast.literal_eval(ConvertSJ(data["NBT"]))
 
 if "Damage" in nbt_data:
     OutputList.append("minecraft:damage="+ str(nbt_data["Damage"]))
@@ -65,21 +64,30 @@ if "display" in nbt_data:
 if "StoredEnchantments" in nbt_data:
     enchant = {}
     for i in range(len(nbt_data["StoredEnchantments"])):
-        enchant[nbt_data["StoredEnchantments"][i]["id"]] = nbt_data["StoredEnchantments"][i]["lvl"]
-    OutputList.append("minecraft:stored_enchantments={levels:{"+ str(enchant).replace("{", "").replace("}", "")+ "}}")
+        enchant[nbt_data["StoredEnchantments"][i]["id"]] = nise_int(nbt_data["StoredEnchantments"][i]["lvl"])
+    OutputList.append("minecraft:stored_enchantments={\"levels\":{"+ str(enchant).replace("'","\"").replace("{", "").replace("}", "")+ "}}")
 if "Enchantments" in nbt_data:
     enchant = {}
     for i in range(len(nbt_data["Enchantments"])):
-        enchant[nbt_data["Enchantments"][i]["id"]] = nbt_data["Enchantments"][i]["lvl"]
-    OutputList.append("minecraft:enchantments={levels:{"+ str(enchant).replace("{", "").replace("}", "")+ "}}")
+        enchant[nbt_data["Enchantments"][i]["id"]] = int(nbt_data["Enchantments"][i]["lvl"])
+    OutputList.append("minecraft:enchantments={\"levels\":{"+ str(enchant).replace("'","\"").replace("{", "").replace("}", "")+ "}}")
 if "BlockEntityTag" in nbt_data:
-    OutputList.append("minecraft:lock="+ str(nbt_data["BlockEntityTag"]["Lock"])+ "\"")
+    if "Lock" in nbt_data["BlockEntityTag"]:
+        OutputList.append("minecraft:lock=\""+ str(nbt_data["BlockEntityTag"]["Lock"]) + "\"")
 
-if KaisekiText["slash"]:
-    OutputCommand = "/give "+ KaisekiText["selector"]+ " "+ KaisekiText["item"]+ str(OutputList).replace("'", "").replace('"', "")
+output_str = ""
+for i in range(len(OutputList)):
+    if i == 0:
+        output_str = output_str+ ("[")
+    output_str = output_str+ (OutputList[i])
+    if len(OutputList) - 1 != i:
+        output_str = output_str+(",")
+    if len(OutputList) - 1 == i:
+        output_str = output_str+("]")
+
+if data["slash"]:
+    OutputCommand = "/give "+ data["selector"]+ " "+ data["item"]+ output_str
 else:
-    OutputCommand = "give "+ KaisekiText["selector"]+ " "+ KaisekiText["item"]+ str(OutputList).replace("'", "").replace('"', "")
+    OutputCommand = "give "+ data["selector"]+ " "+ data["item"]+ output_str
 
 print(OutputCommand)
-
-# {display:{Name:$(STR or LIST)}} → [minecraft:custom_name=$(STR or LIST)]
