@@ -28,12 +28,18 @@ def ConvertSJ(text):
     return find
 
 def nise_int(n_int):
-    if re.match(r"[0-9]+[bBslLfFdD]", n_int) is not None:
-        return int(n_int[:-1])
+    if re.match(r"[0-9]+.?[0-9]*[bBslLfFdD]", n_int) is not None:
+        return float(n_int[:-1])
     else:
-        return int(n_int)
+        if re.match(r"[0-9]+[bBslLfFdD]", n_int) is not None:
+            return int(n_int[:-1])
+        else:
+            if "." in n_int:
+                return float(n_int)
+            else:
+                return int(n_int)
 
-command = '/give @p minecraft:diamond_axe{Damage: 1b,BlockEntityTag:{"Lock": "あ"}}' ## ←←ここにコマンドを入力
+command = '/give @p diamond{AttributeModifiers:[{AttributeName:"generic.scale",amount:-0.95,operation:0,UUID:[1,1,1,1],Slot:"offhand"}]}' ## ←←ここにコマンドを入力
 data = Give_H(command)
 
 OutputList = []
@@ -74,6 +80,25 @@ if "Enchantments" in nbt_data:
 if "BlockEntityTag" in nbt_data:
     if "Lock" in nbt_data["BlockEntityTag"]:
         OutputList.append("minecraft:lock=\""+ str(nbt_data["BlockEntityTag"]["Lock"]) + "\"")
+if "AttributeModifiers" in nbt_data:
+    kari_output = "minecraft:attribute_modifiers={\"modifiers\":[{\"type\":\""+nbt_data["AttributeModifiers"][0]["AttributeName"]+"\",\"amount\":"+str(nise_int(nbt_data["AttributeModifiers"][0]["amount"]))+",\"uuid\":"+str(nbt_data["AttributeModifiers"][0]["UUID"]).replace("'","")
+    if "Name" in nbt_data["AttributeModifiers"][0]:
+        kari_output = kari_output + ",\"name\":" + nbt_data["AttributeModifiers"][0]["Name"] + "\","
+    else:
+        kari_output = kari_output + ",\"name\":\"\","
+    kari_output = kari_output + "\"operation\":"
+    if nise_int(nbt_data["AttributeModifiers"][0]["operation"]) == 0:
+        kari_output = kari_output + "\"add_value\""
+    elif nise_int(nbt_data["AttributeModifiers"][0]["operation"]) == 1:
+        kari_output = kari_output + "\"add_multiplied_base\""
+    else:
+        kari_output = kari_output + "\"add_multiplied_total\""
+    if "Slot" in nbt_data["AttributeModifiers"][0]:
+        kari_output = kari_output + ",\"slot\":\"" + nbt_data["AttributeModifiers"][0]["Slot"] + "\""
+    else:
+        kari_output = kari_output + ",\"slot\":\"any\""
+    kari_output = kari_output + "}]}"
+    OutputList.append(kari_output)
 
 output_str = ""
 for i in range(len(OutputList)):
