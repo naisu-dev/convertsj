@@ -12,6 +12,7 @@ printされる
 - display(color only)
 - StoredEnchantments
 - Enchantments
+- AttributeModifiers ←←←new まじで頑張ったから褒めて！
 
 これから追加していく予定
 
